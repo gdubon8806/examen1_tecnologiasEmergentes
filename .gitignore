@@ -1,0 +1,7 @@
+.env
+database/backups/*.bak
+__pycache__/
+*.pyc
+node_modules/
+.venv/
+models/*.pkl

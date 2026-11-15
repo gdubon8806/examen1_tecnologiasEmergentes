@@ -1,0 +1,648 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Analítica de Ventas</title>
+<style>
+  :root { --bg:#f4f6fa; --card:#fff; --text:#1b2433; --muted:#6b7587; --line:#e3e8f0;
+          --brand:#2563eb; --good:#15803d; --bad:#b91c1c; --warn:#b45309; }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+         background:var(--bg); color:var(--text); }
+  header { background:var(--card); border-bottom:1px solid var(--line); padding:12px 20px;
+           display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between; }
+  h1 { font-size:18px; margin:0; }
+  .muted { color:var(--muted); font-size:13px; }
+  .tabs button { border:0; background:none; padding:8px 14px; cursor:pointer; font-size:14px;
+                 border-bottom:2px solid transparent; color:var(--muted); }
+  .tabs button.active { color:var(--brand); border-bottom-color:var(--brand); font-weight:600; }
+  main { padding:16px 20px 40px; max-width:1300px; margin:0 auto; }
+  .filters { display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; background:var(--card);
+             border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
+  .filters label { display:flex; flex-direction:column; font-size:12px; color:var(--muted); gap:4px; }
+  input, select, button.btn { font:inherit; padding:7px 9px; border:1px solid var(--line);
+                              border-radius:7px; background:#fff; color:var(--text); }
+  button.btn { cursor:pointer; } button.btn:hover { background:#eef2ff; }
+  button.btn:disabled { opacity:.45; cursor:default; }
+  .chips { margin:10px 0; display:flex; gap:8px; flex-wrap:wrap; min-height:8px; }
+  .chip { background:#e0e7ff; color:#1e3a8a; border-radius:999px; padding:3px 6px 3px 12px; font-size:13px; }
+  .chip button { border:0; background:none; cursor:pointer; font-size:15px; color:#1e3a8a; }
+  .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:12px; margin:12px 0; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; }
+  .kpi .label { color:var(--muted); font-size:13px; }
+  .kpi .value { font-size:26px; font-weight:700; margin:4px 0; }
+  .kpi .delta { font-size:13px; }
+  .up { color:var(--good); } .down { color:var(--bad); }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(420px,1fr)); gap:12px; }
+  .full { grid-column:1/-1; }
+  .chart { height:300px; width:100%; }
+  .card h2 { font-size:15px; margin:0 0 6px; }
+  .tablewrap { overflow-x:auto; }
+  table { border-collapse:collapse; width:100%; font-size:13px; }
+  th, td { text-align:left; padding:7px 9px; border-bottom:1px solid var(--line); white-space:nowrap; }
+  th { color:var(--muted); font-weight:600; background:#fafbfd; }
+  td.r, th.r { text-align:right; }
+  .pager { display:flex; gap:10px; align-items:center; justify-content:flex-end; margin-top:10px; }
+  .banner { padding:10px 14px; border-radius:8px; margin:10px 0; font-size:14px; }
+  .banner.err { background:#fee2e2; color:#7f1d1d; } .banner.empty { background:#fef3c7; color:#78350f; }
+  .loading { opacity:.45; transition:opacity .15s; pointer-events:none; }
+  tr.clickable { cursor:pointer; } tr.clickable:hover { background:#f1f5ff; }
+  .msg { border:1px solid var(--line); border-radius:10px; padding:10px 14px; margin:10px 0; background:#fff; }
+  .msg.user { background:#e0e7ff; border-color:#c7d2fe; margin-left:15%; }
+  .msg.bot { margin-right:8%; }
+  .msg .tag { display:inline-block; font-size:11px; font-weight:700; padding:1px 8px; border-radius:999px; margin-right:6px; }
+  .tag.fact { background:#dcfce7; color:#166534; } .tag.pred { background:#ede9fe; color:#4c1d95; }
+  .tag.ai { background:#fef3c7; color:#92400e; } .tag.rules { background:#e5e7eb; color:#374151; }
+  .msg ul { margin:6px 0 6px 18px; padding:0; font-size:14px; } .msg details { font-size:12px; color:var(--muted); margin-top:6px; }
+  .msg .warn { background:#fef3c7; color:#78350f; padding:6px 10px; border-radius:6px; font-size:13px; margin-top:6px; }
+  #chatLog { max-height:60vh; overflow-y:auto; padding-right:4px; }
+  .badge { padding:2px 8px; border-radius:999px; font-size:12px; font-weight:600; }
+  .b-SUCCESS { background:#dcfce7; color:#166534; } .b-FAILED { background:#fee2e2; color:#991b1b; }
+  .b-RUNNING { background:#fef3c7; color:#92400e; }
+  #login { min-height:100vh; display:grid; place-items:center; }
+  #login form { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:26px;
+                width:min(340px,90vw); display:flex; flex-direction:column; gap:12px; }
+  footer { margin-top:20px; font-size:12px; color:var(--muted); }
+  @media (max-width:560px) { .grid { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<section id="login">
+  <form id="loginForm">
+    <h1>Analítica de Ventas</h1>
+    <span class="muted">Ingresa para ver el dashboard</span>
+    <input id="u" placeholder="Usuario" autocomplete="username" required>
+    <input id="p" type="password" placeholder="Contraseña" autocomplete="current-password" required>
+    <button class="btn" type="submit">Entrar</button>
+    <div id="loginErr" class="banner err" hidden></div>
+  </form>
+</section>
+
+<div id="app" hidden>
+  <header>
+    <div>
+      <h1>Plataforma de Analítica de Ventas</h1>
+      <span class="muted" id="updated">Datos actualizados: …</span>
+    </div>
+    <nav class="tabs">
+      <button id="tabSales" class="active">Ventas</button>
+      <button id="tabFc">Predicción (ML)</button>
+      <button id="tabAl">Alertas <span id="alertBadge" class="badge b-FAILED" hidden>0</span></button>
+      <button id="tabChat">Asistente (IA)</button>
+      <button id="tabOps">Operación (ETL)</button>
+    </nav>
+    <button class="btn" id="logout">Salir</button>
+  </header>
+
+  <main>
+    <div id="error" class="banner err" hidden></div>
+
+    <section id="viewSales">
+      <div class="filters">
+        <label>Desde <input type="date" id="fFrom"></label>
+        <label>Hasta <input type="date" id="fTo"></label>
+        <label>Categoría de cliente <select id="fCategory"><option value="">Todas</option></select></label>
+        <label>Grupo de producto <select id="fGroup"><option value="">Todos</option></select></label>
+        <label>Territorio <select id="fTerritory"><option value="">Todos</option></select></label>
+        <button class="btn" id="fReset">Restablecer</button>
+      </div>
+      <div class="chips" id="chips"></div>
+      <div id="empty" class="banner empty" hidden>No hay datos para los filtros seleccionados.</div>
+
+      <div class="kpis" id="kpis"></div>
+
+      <div class="grid" id="charts">
+        <div class="card full"><h2>Ventas netas por mes <span class="muted">(clic en un mes para filtrar)</span></h2><div class="chart" id="cTrend"></div></div>
+        <div class="card"><h2>Por grupo de producto <span class="muted">(clic para filtrar)</span></h2><div class="chart" id="cGroup"></div></div>
+        <div class="card"><h2>Por categoría de cliente <span class="muted">(clic para filtrar)</span></h2><div class="chart" id="cCategory"></div></div>
+        <div class="card"><h2>Por territorio de ventas <span class="muted">(clic para filtrar)</span></h2><div class="chart" id="cTerritory"></div></div>
+        <div class="card"><h2>Top 10 clientes</h2><div class="chart" id="cCustomer"></div></div>
+      </div>
+
+      <div class="card" style="margin-top:12px">
+        <h2>Detalle de líneas de venta</h2>
+        <div class="tablewrap"><table id="detail"></table></div>
+        <div class="pager">
+          <span class="muted" id="pageInfo"></span>
+          <button class="btn" id="prev">← Anterior</button>
+          <button class="btn" id="next">Siguiente →</button>
+        </div>
+      </div>
+      <footer>Datos históricos y descriptivos del Data Warehouse (AnalyticsDW). Ventas netas = cantidad × precio unitario, sin impuestos.
+        Las predicciones, cuando existan, se mostrarán aparte y marcadas como predicción.</footer>
+    </section>
+
+    <section id="viewAlerts" hidden>
+      <div class="filters">
+        <label>Estado <select id="alStatus">
+          <option value="">Todas</option><option value="NUEVA">Nuevas</option><option value="ATENDIDA">Atendidas</option>
+          <option value="DESCARTADA">Descartadas</option><option value="RESUELTA">Resueltas</option></select></label>
+        <button class="btn" id="alReload">Actualizar</button>
+        <span class="muted" id="alCounts"></span>
+      </div>
+      <div id="alEmpty" class="banner empty" hidden></div>
+      <div class="card" style="margin-top:12px">
+        <h2>Alertas <span class="muted">(clic en una fila para ver el detalle)</span></h2>
+        <div class="tablewrap"><table id="alTable"></table></div>
+      </div>
+      <div class="card" id="alDetail" style="margin-top:12px" hidden></div>
+    </section>
+
+    <section id="viewChat" hidden>
+      <div class="banner" style="background:#fef9c3;color:#713f12">
+        Asistente analítico. Responde solo con consultas aprobadas al Data Warehouse (no ejecuta SQL libre). Cada respuesta separa los
+        <b>hechos consultados</b>, las <b>predicciones</b> y la <b>interpretación generada</b>. <span id="chatProvider"></span>
+      </div>
+      <div class="card">
+        <div id="chatLog"><div class="muted">Haz una pregunta sobre las ventas o prueba uno de los ejemplos.</div></div>
+        <div class="chips" id="chatSamples" style="margin-top:12px"></div>
+        <form id="chatForm" style="display:flex;gap:8px;margin-top:6px">
+          <input id="chatInput" maxlength="500" style="flex:1" placeholder="Ej.: ¿Cuáles fueron las ventas del último trimestre?" autocomplete="off">
+          <button class="btn" id="chatSend" type="submit">Preguntar</button>
+        </form>
+      </div>
+    </section>
+
+    <section id="viewOps" hidden>
+      <div class="kpis" id="opsKpis"></div>
+      <div class="card">
+        <h2>Últimas ejecuciones del pipeline</h2>
+        <div class="tablewrap"><table id="runs"></table></div>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <h2>Watermarks (hasta dónde se ha cargado)</h2>
+        <div class="tablewrap"><table id="marks"></table></div>
+      </div>
+    </section>
+    <section id="viewForecast" hidden>
+      <div class="banner" style="background:#ede9fe;color:#4c1d95">
+        <b>PREDICCIÓN.</b> Esta sección muestra valores estimados por un modelo de Machine Learning, no datos históricos.
+      </div>
+      <div id="fcEmpty" class="banner empty" hidden>Aún no hay un modelo entrenado. Ejecuta train_forecast.py y predict_forecast.py.</div>
+      <div id="fcBody">
+        <div class="card"><h2>Ventas netas mensuales: histórico y predicción</h2><div class="chart" id="cForecast"></div></div>
+        <div class="grid" style="margin-top:12px">
+          <div class="card"><h2>Evaluación en datos NO usados para entrenar</h2>
+            <div class="tablewrap"><table id="fcMetrics"></table></div><p class="muted" id="fcVerdict"></p></div>
+          <div class="card"><h2>Detalle de la predicción</h2>
+            <div class="tablewrap"><table id="fcTable"></table></div><p class="muted" id="fcMeta"></p></div>
+        </div>
+        <div class="card" style="margin-top:12px"><h2>Limitaciones</h2>
+          <ul class="muted">
+            <li>Pocos meses de historia y periodo de prueba corto (6 meses): la estimación es inestable.</li>
+            <li>Solo usa tendencia y estacionalidad; no conoce promociones, precios ni eventos externos.</li>
+            <li>El rango del 80 % es aproximado.</li>
+            <li>Datos de ejemplo: el modelo demuestra el proceso, no sirve para decisiones reales.</li>
+          </ul></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<script>
+"use strict";
+const $ = (s) => document.querySelector(s);
+const money0 = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+const money2 = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+const num0 = new Intl.NumberFormat('en-US');
+const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const short = (v) => Math.abs(v) >= 1e6 ? '$' + (v / 1e6).toFixed(1) + 'M' : Math.abs(v) >= 1e3 ? '$' + (v / 1e3).toFixed(0) + 'k' : '$' + v;
+
+let token = sessionStorage.getItem('token');
+let meta = null;
+const state = { filters: { date_from: '', date_to: '', category: '', product_group: '', territory: '' },
+                page: 1, pageSize: 15, total: 0, reqId: 0 };
+const charts = {};
+
+// ---------- API ----------
+async function api(path, params = {}) {
+  const url = new URL(path, window.location.origin);
+  Object.entries(params).forEach(([k, v]) => { if (v !== '' && v != null) url.searchParams.set(k, v); });
+  const res = await fetch(url, { headers: token ? { Authorization: 'Bearer ' + token } : {} });
+  if (res.status === 401) { logout(); throw new Error('Sesión expirada'); }
+  if (!res.ok) throw new Error('Error del servidor (' + res.status + ')');
+  return res.json();
+}
+
+async function apiSend(method, path, body) {
+  const res = await fetch(path, { method, headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+    body: JSON.stringify(body) });
+  if (res.status === 401) { logout(); throw new Error('Sesión expirada'); }
+  if (!res.ok) throw new Error('Error del servidor (' + res.status + ')');
+  return res.json();
+}
+
+// ---------- login ----------
+$('#loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  $('#loginErr').hidden = true;
+  try {
+    const res = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: $('#u').value, password: $('#p').value }) });
+    if (!res.ok) throw new Error(res.status === 401 ? 'Usuario o contraseña incorrectos' : 'Error del servidor');
+    token = (await res.json()).token;
+    sessionStorage.setItem('token', token);
+    $('#p').value = '';
+    await start();
+  } catch (err) { $('#loginErr').textContent = err.message; $('#loginErr').hidden = false; }
+});
+
+function logout() {
+  clearInterval(alertTimer); token = null; sessionStorage.removeItem('token');
+  $('#app').hidden = true; $('#login').hidden = false;
+}
+$('#logout').addEventListener('click', logout);
+
+// ---------- arranque ----------
+function addDays(iso, n) {
+  const d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10);
+}
+function fillSelect(sel, values) {
+  const first = sel.options[0];
+  sel.innerHTML = ''; sel.appendChild(first);
+  values.forEach((v) => { const o = document.createElement('option'); o.value = v; o.textContent = v; sel.appendChild(o); });
+}
+function defaultFilters() {
+  const to = (meta.date_max || '').slice(0, 10), min = (meta.date_min || '').slice(0, 10);
+  let from = to ? addDays(to, -364) : '';
+  if (min && from < min) from = min;
+  return { date_from: from, date_to: to, category: '', product_group: '', territory: '' };
+}
+async function start() {
+  try {
+    meta = await api('/api/meta');
+    $('#login').hidden = true; $('#app').hidden = false;
+    if (typeof echarts === 'undefined') throw new Error('No se pudo cargar la librería de gráficos (revisa tu conexión a internet)');
+    fillSelect($('#fCategory'), meta.categories);
+    fillSelect($('#fGroup'), meta.product_groups);
+    fillSelect($('#fTerritory'), meta.territories);
+    $('#updated').textContent = 'Datos actualizados: ' +
+      (meta.last_update ? new Date(meta.last_update).toLocaleString('es') + ' (hora del servidor)' : 'sin datos');
+    state.filters = defaultFilters(); state.page = 1;
+    syncControls(); await refresh();
+    refreshAlertBadge(); clearInterval(alertTimer); alertTimer = setInterval(refreshAlertBadge, 30000);
+  } catch (err) { if (token) showError(err.message); }
+}
+function syncControls() {
+  const f = state.filters;
+  $('#fFrom').value = f.date_from; $('#fTo').value = f.date_to;
+  $('#fCategory').value = f.category; $('#fGroup').value = f.product_group; $('#fTerritory').value = f.territory;
+  renderChips();
+}
+
+// ---------- filtros ----------
+function setFilter(key, value) { state.filters[key] = value; state.page = 1; syncControls(); refresh(); }
+$('#fFrom').addEventListener('change', (e) => setFilter('date_from', e.target.value));
+$('#fTo').addEventListener('change', (e) => setFilter('date_to', e.target.value));
+$('#fCategory').addEventListener('change', (e) => setFilter('category', e.target.value));
+$('#fGroup').addEventListener('change', (e) => setFilter('product_group', e.target.value));
+$('#fTerritory').addEventListener('change', (e) => setFilter('territory', e.target.value));
+$('#fReset').addEventListener('click', () => { state.filters = defaultFilters(); state.page = 1; syncControls(); refresh(); });
+
+function renderChips() {
+  const names = { category: 'Categoría', product_group: 'Grupo', territory: 'Territorio' };
+  $('#chips').innerHTML = '';
+  Object.keys(names).forEach((k) => {
+    if (!state.filters[k]) return;
+    const chip = document.createElement('span'); chip.className = 'chip';
+    chip.textContent = names[k] + ': ' + state.filters[k] + ' ';
+    const x = document.createElement('button'); x.textContent = '×'; x.title = 'Quitar filtro';
+    x.addEventListener('click', () => setFilter(k, ''));
+    chip.appendChild(x); $('#chips').appendChild(chip);
+  });
+}
+
+// ---------- carga de datos ----------
+function setLoading(on) { ['#kpis', '#charts', '#detail'].forEach((s) => $(s).classList.toggle('loading', on)); }
+function showError(msg) { $('#error').textContent = 'No se pudieron cargar los datos: ' + msg; $('#error').hidden = false; }
+
+async function refresh() {
+  const id = ++state.reqId, f = state.filters;
+  setLoading(true); $('#error').hidden = true;
+  try {
+    const [kpis, trend, group, category, territory, customer, detail] = await Promise.all([
+      api('/api/kpis', f), api('/api/trend', f),
+      api('/api/sales/by/product_group', { ...f, limit: 10 }),
+      api('/api/sales/by/customer_category', { ...f, limit: 10 }),
+      api('/api/sales/by/territory', { ...f, limit: 10 }),
+      api('/api/sales/by/customer', { ...f, limit: 10 }),
+      api('/api/sales/detail', { ...f, page: state.page, page_size: state.pageSize }),
+    ]);
+    if (id !== state.reqId) return;          // llegó una respuesta vieja: se descarta
+    $('#empty').hidden = kpis.current.orders > 0;
+    renderKpis(kpis); renderTrend(trend);
+    renderBar('cGroup', group, 'product_group'); renderBar('cCategory', category, 'category');
+    renderBar('cTerritory', territory, 'territory'); renderBar('cCustomer', customer, null);
+    renderDetail(detail);
+  } catch (err) { if (id === state.reqId) showError(err.message); }
+  finally { if (id === state.reqId) setLoading(false); }
+}
+
+// ---------- KPIs ----------
+const KPI_DEFS = [
+  { key: 'net_sales', label: 'Ventas netas', fmt: (v) => money0.format(v) },
+  { key: 'orders', label: 'Órdenes', fmt: (v) => num0.format(v) },
+  { key: 'units', label: 'Unidades vendidas', fmt: (v) => num0.format(v) },
+  { key: 'avg_ticket', label: 'Ticket promedio por orden', fmt: (v) => money2.format(v) },
+  { key: 'customers', label: 'Clientes activos', fmt: (v) => num0.format(v) },
+];
+function renderKpis(data) {
+  $('#kpis').innerHTML = KPI_DEFS.map((d) => {
+    const delta = data.delta_pct ? data.delta_pct[d.key] : null;
+    let txt = data.previous_period ? 'sin base de comparación' : 'elige un rango de fechas para comparar';
+    let cls = 'muted';
+    if (delta != null) { txt = (delta >= 0 ? '▲ ' : '▼ ') + Math.abs(delta) + '% vs periodo anterior'; cls = delta >= 0 ? 'up' : 'down'; }
+    return `<div class="card kpi"><div class="label">${esc(d.label)}</div>
+            <div class="value">${esc(d.fmt(data.current[d.key]))}</div><div class="delta ${cls}">${esc(txt)}</div></div>`;
+  }).join('');
+}
+
+// ---------- gráficos ----------
+function chart(id) {
+  if (!charts[id]) {
+    charts[id] = echarts.init(document.getElementById(id));
+    if (id === 'cTrend') charts[id].on('click', onTrendClick);
+  }
+  return charts[id];
+}
+function emptyOption(msg) {
+  return { title: { text: msg, left: 'center', top: 'middle', textStyle: { color: '#6b7587', fontSize: 14, fontWeight: 'normal' } },
+           xAxis: { show: false }, yAxis: { show: false }, series: [] };
+}
+const tip = (p) => { const a = Array.isArray(p) ? p[0] : p; return esc(a.name) + '<br>' + money0.format(a.value); };
+
+function renderTrend(rows) {
+  const c = chart('cTrend');
+  if (!rows.length) { c.setOption(emptyOption('Sin datos'), true); return; }
+  c.setOption({
+    grid: { left: 60, right: 20, top: 20, bottom: 50 },
+    tooltip: { trigger: 'axis', formatter: tip },
+    xAxis: { type: 'category', data: rows.map((r) => r.ym), axisLabel: { rotate: 45 } },
+    yAxis: { type: 'value', axisLabel: { formatter: short } },
+    series: [{ type: 'line', smooth: true, areaStyle: { opacity: .12 }, symbolSize: 6,
+               itemStyle: { color: '#2563eb' }, data: rows.map((r) => r.sales) }],
+  }, true);
+}
+function renderBar(id, rows, filterKey) {
+  const c = chart(id);
+  if (!rows.length) { c.setOption(emptyOption('Sin datos'), true); return; }
+  const data = rows.slice().reverse();      // el mayor arriba
+  c.setOption({
+    grid: { left: 150, right: 30, top: 10, bottom: 25 },
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: tip },
+    xAxis: { type: 'value', axisLabel: { formatter: short } },
+    yAxis: { type: 'category', data: data.map((r) => r.label), axisLabel: { width: 135, overflow: 'truncate' } },
+    series: [{ type: 'bar', itemStyle: { color: '#2563eb' }, data: data.map((r) => r.sales) }],
+  }, true);
+  c.off('click');
+  if (filterKey) c.on('click', (p) => setFilter(filterKey, p.name));
+}
+function onTrendClick(p) {                     // drill-down: clic en un mes -> filtra ese mes
+  const [y, m] = p.name.split('-').map(Number);
+  const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  state.filters.date_from = `${p.name}-01`; state.filters.date_to = `${p.name}-${String(last).padStart(2, '0')}`;
+  state.page = 1; syncControls(); refresh();
+}
+window.addEventListener('resize', () => Object.values(charts).forEach((c) => c.resize()));
+
+// ---------- tabla de detalle ----------
+function renderDetail(d) {
+  state.total = d.total;
+  const head = ['Fecha', 'Orden', 'Cliente', 'Categoría', 'Producto', 'Grupo', 'Cant.', 'Precio unit.', 'Venta neta'];
+  const rows = d.rows.map((r) => `<tr><td>${esc(String(r.order_date).slice(0, 10))}</td><td>${esc(r.order_id)}</td>
+      <td>${esc(r.customer)}</td><td>${esc(r.category)}</td><td>${esc(r.product)}</td><td>${esc(r.product_group)}</td>
+      <td class="r">${esc(num0.format(r.quantity))}</td><td class="r">${esc(money2.format(r.unit_price))}</td>
+      <td class="r">${esc(money2.format(r.net_amount))}</td></tr>`).join('');
+  $('#detail').innerHTML = '<thead><tr>' + head.map((h, i) => `<th class="${i > 5 ? 'r' : ''}">${h}</th>`).join('') + '</tr></thead><tbody>' +
+    (rows || `<tr><td colspan="9" class="muted">Sin resultados</td></tr>`) + '</tbody>';
+  const pages = Math.max(1, Math.ceil(d.total / state.pageSize));
+  $('#pageInfo').textContent = `Página ${state.page} de ${pages} · ${num0.format(d.total)} líneas`;
+  $('#prev').disabled = state.page <= 1; $('#next').disabled = state.page >= pages;
+}
+$('#prev').addEventListener('click', () => { if (state.page > 1) { state.page--; refresh(); } });
+$('#next').addEventListener('click', () => { state.page++; refresh(); });
+
+// ---------- pestañas y vista operativa ----------
+function showTab(name) {
+  const views = { sales: 'viewSales', fc: 'viewForecast', al: 'viewAlerts', chat: 'viewChat', ops: 'viewOps' };
+  const tabs = { sales: 'tabSales', fc: 'tabFc', al: 'tabAl', chat: 'tabChat', ops: 'tabOps' };
+  Object.keys(views).forEach((k) => { $('#' + views[k]).hidden = k !== name; $('#' + tabs[k]).classList.toggle('active', k === name); });
+  if (name === 'sales') setTimeout(() => Object.values(charts).forEach((c) => c.resize()), 0);
+  if (name === 'ops') loadOps();
+  if (name === 'fc') loadForecast();
+  if (name === 'al') loadAlerts();
+  if (name === 'chat') initChat();
+}
+$('#tabSales').addEventListener('click', () => showTab('sales'));
+$('#tabOps').addEventListener('click', () => showTab('ops'));
+$('#tabFc').addEventListener('click', () => showTab('fc'));
+$('#tabAl').addEventListener('click', () => showTab('al'));
+$('#tabChat').addEventListener('click', () => showTab('chat'));
+
+const fmtDate = (s) => s ? new Date(s).toLocaleString('es') : '—';
+async function loadOps() {
+  try {
+    $('#error').hidden = true;
+    const o = await api('/api/ops/etl');
+    const s = o.summary;
+    $('#opsKpis').innerHTML = [
+      ['Última carga exitosa', fmtDate(s.last_success)], ['Ejecuciones registradas', num0.format(s.total_runs || 0)],
+      ['Ejecuciones fallidas', num0.format(s.failed_runs || 0)],
+    ].map(([l, v]) => `<div class="card kpi"><div class="label">${esc(l)}</div><div class="value" style="font-size:20px">${esc(v)}</div></div>`).join('');
+    const h = ['Inicio', 'Proceso', 'Destino', 'Estado', 'Leídas', 'Insertadas', 'Actualizadas', 'Rechazadas', 'Seg.', 'Error'];
+    $('#runs').innerHTML = '<thead><tr>' + h.map((x) => `<th>${x}</th>`).join('') + '</tr></thead><tbody>' +
+      o.runs.map((r) => `<tr><td>${esc(fmtDate(r.start_time))}</td><td>${esc(r.pipeline_name)}</td><td>${esc(r.target_object)}</td>
+        <td><span class="badge b-${esc(r.status)}">${esc(r.status)}</span></td><td>${esc(r.rows_read ?? '')}</td>
+        <td>${esc(r.rows_inserted ?? '')}</td><td>${esc(r.rows_updated ?? '')}</td><td>${esc(r.rows_rejected ?? '')}</td>
+        <td>${esc(r.seconds ?? '')}</td><td>${esc(r.error_detail ?? '')}</td></tr>`).join('') + '</tbody>';
+    $('#marks').innerHTML = '<thead><tr><th>Proceso</th><th>Último watermark</th><th>Actualizado</th></tr></thead><tbody>' +
+      o.watermarks.map((w) => `<tr><td>${esc(w.pipeline_name)}</td><td>${esc(fmtDate(w.last_watermark))}</td><td>${esc(fmtDate(w.updated_at))}</td></tr>`).join('') + '</tbody>';
+  } catch (err) { showError(err.message); }
+}
+
+
+// ---------- predicción (ML) ----------
+const MODEL_LABELS = { modelo: 'Modelo (Ridge)', naive_estacional: 'Baseline: mismo mes del año anterior',
+  naive_ultimo_valor: 'Baseline: último valor', promedio_entrenamiento: 'Baseline: promedio del entrenamiento' };
+async function loadForecast() {
+  try {
+    $('#error').hidden = true;
+    const d = await api('/api/forecast');
+    $('#fcEmpty').hidden = !!d.model; $('#fcBody').hidden = !d.model;
+    if (!d.model) return;
+    if (typeof echarts === 'undefined') throw new Error('No se pudo cargar la librería de gráficos');
+    const hist = d.history, fc = d.forecast, n = hist.length;
+    const cats = hist.map((r) => r.ym).concat(fc.map((r) => String(r.target_month).slice(0, 7)));
+    const pad = (arr) => hist.map(() => null).concat(arr);
+    chart('cForecast').setOption({
+      grid: { left: 60, right: 20, top: 40, bottom: 50 },
+      legend: { top: 0 },
+      tooltip: { trigger: 'axis', valueFormatter: (v) => (v == null ? '' : money0.format(v)) },
+      xAxis: { type: 'category', data: cats, axisLabel: { rotate: 45 } },
+      yAxis: { type: 'value', axisLabel: { formatter: short } },
+      series: [
+        { name: 'Histórico', type: 'line', smooth: true, itemStyle: { color: '#2563eb' },
+          data: hist.map((r) => r.net_sales).concat(fc.map(() => null)) },
+        { name: 'PREDICCIÓN', type: 'line', lineStyle: { type: 'dashed', width: 3 }, itemStyle: { color: '#7c3aed' },
+          data: hist.map((r, i) => (i === n - 1 ? r.net_sales : null)).concat(fc.map((r) => r.predicted_net_sales)) },
+        { name: 'Límite inferior (80%)', type: 'line', lineStyle: { type: 'dotted', opacity: .6 }, itemStyle: { color: '#a78bfa' },
+          symbol: 'none', data: pad(fc.map((r) => r.lower_80)) },
+        { name: 'Límite superior (80%)', type: 'line', lineStyle: { type: 'dotted', opacity: .6 }, itemStyle: { color: '#a78bfa' },
+          symbol: 'none', data: pad(fc.map((r) => r.upper_80)) },
+      ],
+    }, true);
+    chart('cForecast').resize();
+
+    const order = ['modelo', 'naive_estacional', 'naive_ultimo_valor', 'promedio_entrenamiento'];
+    $('#fcMetrics').innerHTML = '<thead><tr><th>Modelo / baseline</th><th class="r">MAE</th><th class="r">RMSE</th><th class="r">MAPE</th></tr></thead><tbody>' +
+      order.filter((k) => d.test && d.test[k]).map((k) => `<tr><td>${esc(MODEL_LABELS[k] || k)}</td>
+        <td class="r">${esc(money0.format(d.test[k].mae))}</td><td class="r">${esc(money0.format(d.test[k].rmse))}</td>
+        <td class="r">${esc(d.test[k].mape.toFixed(1))}%</td></tr>`).join('') + '</tbody>';
+    $('#fcVerdict').textContent = (d.verdict || '') + (d.splits ? ' Prueba: ' + d.splits.test + '.' : '');
+    $('#fcTable').innerHTML = '<thead><tr><th>Mes</th><th class="r">Horizonte</th><th class="r">Predicción</th><th>Rango 80%</th></tr></thead><tbody>' +
+      fc.map((r) => `<tr><td>${esc(String(r.target_month).slice(0, 7))}</td><td class="r">+${esc(r.horizon_months)} m</td>
+        <td class="r">${esc(money0.format(r.predicted_net_sales))}</td>
+        <td>${esc(money0.format(r.lower_80))} – ${esc(money0.format(r.upper_80))}</td></tr>`).join('') + '</tbody>';
+    $('#fcMeta').textContent = `Modelo ${d.model.model_version} · entrenado ${fmtDate(d.model.trained_at)} con datos hasta ` +
+      `${String(d.model.trained_through).slice(0, 7)} (${d.model.n_months} meses) · predicción generada ` +
+      (fc.length ? fmtDate(fc[0].prediction_date) : '—') + (fc.length ? '' : ' (ejecuta predict_forecast.py)');
+  } catch (err) { showError(err.message); }
+}
+
+
+// ---------- alertas ----------
+const SEV_CLASS = { ALTA: 'b-FAILED', MEDIA: 'b-RUNNING', BAJA: 'b-SUCCESS' };
+const SRC_LABEL = { RULE: 'Regla de negocio', ML: 'Modelo ML', AI: 'IA generativa' };
+const ST_LABEL = { NUEVA: 'Nueva', ATENDIDA: 'Atendida', DESCARTADA: 'Descartada', RESUELTA: 'Resuelta' };
+let alertTimer = null;
+
+async function refreshAlertBadge() {
+  try {
+    const d = await api('/api/alerts', { status: 'NUEVA', limit: 1 });
+    const n = (d.counts && d.counts.NUEVA) || 0;
+    $('#alertBadge').textContent = n; $('#alertBadge').hidden = n === 0;
+  } catch (err) { /* el aviso es secundario: no se muestra error */ }
+}
+
+async function loadAlerts() {
+  try {
+    $('#error').hidden = true;
+    const d = await api('/api/alerts', { status: $('#alStatus').value, limit: 100 });
+    $('#alEmpty').hidden = true; $('#alDetail').hidden = true;
+    if (d.setup_needed) {
+      $('#alEmpty').textContent = 'Aún no existe el módulo de alertas. Ejecuta: python notifications/alert_engine.py';
+      $('#alEmpty').hidden = false; $('#alTable').innerHTML = ''; return;
+    }
+    $('#alCounts').textContent = Object.entries(d.counts).map(([k, v]) => `${ST_LABEL[k] || k}: ${v}`).join(' · ');
+    const h = ['Fecha', 'Gravedad', 'Origen', 'Indicador', 'Periodo', 'Valor', 'Referencia', 'Cambio', 'Estado'];
+    $('#alTable').innerHTML = '<thead><tr>' + h.map((x) => `<th>${x}</th>`).join('') + '</tr></thead><tbody>' +
+      (d.alerts.map((a) => `<tr class="clickable" data-id="${esc(a.alert_id)}"><td>${esc(fmtDate(a.created_at))}</td>
+        <td><span class="badge ${SEV_CLASS[a.severity] || ''}">${esc(a.severity)}</span></td>
+        <td>${esc(SRC_LABEL[a.source_type] || a.source_type)}${a.is_simulated ? ' <span class="badge b-RUNNING">SIMULADA</span>' : ''}</td>
+        <td>${esc(a.indicator)}</td><td>${esc(a.period_label)}</td><td>${esc(money0.format(a.observed_value))}</td>
+        <td>${esc(money0.format(a.reference_value))}</td><td>${esc(a.change_pct)}%</td><td>${esc(ST_LABEL[a.status] || a.status)}</td></tr>`).join('')
+        || '<tr><td colspan="9" class="muted">No hay alertas con este filtro.</td></tr>') + '</tbody>';
+    document.querySelectorAll('#alTable tr.clickable').forEach((tr) => tr.addEventListener('click', () => openAlert(tr.dataset.id)));
+    refreshAlertBadge();
+  } catch (err) { showError(err.message); }
+}
+
+async function openAlert(id) {
+  try {
+    const d = await api('/api/alerts/' + id), a = d.alert;
+    const row = (k, v) => `<div><span class="muted">${esc(k)}</span><br><b>${esc(v ?? '—')}</b></div>`;
+    $('#alDetail').innerHTML = `<h2>Alerta #${esc(a.alert_id)} ${a.is_simulated ? '<span class="badge b-RUNNING">SIMULADA</span>' : ''}</h2>
+      <div class="kpis">${row('Fecha y hora', fmtDate(a.created_at))}${row('Gravedad', a.severity)}${row('Origen', SRC_LABEL[a.source_type] || a.source_type)}
+        ${row('Indicador / entidad', a.indicator + ' · ' + a.entity)}${row('Periodo', a.period_label)}
+        ${row(a.source_type === 'ML' ? 'Valor predicho' : 'Valor observado', money0.format(a.observed_value))}
+        ${row('Referencia (' + (a.reference_label || '') + ')', money0.format(a.reference_value))}
+        ${row('Umbral de la regla', '-' + a.threshold_pct + '%')}${row('Cambio', a.change_pct + '%')}
+        ${row('Versión del modelo', a.model_version)}${row('Estado', ST_LABEL[a.status] || a.status)}${row('Última actualización', a.updated_at ? fmtDate(a.updated_at) + ' por ' + a.updated_by : '—')}</div>
+      <p><b>Explicación:</b> ${esc(a.explanation)}</p><p><b>Acción recomendada:</b> ${esc(a.recommended_action)}</p>
+      <h2 style="margin-top:14px">Entregas</h2>
+      <div class="tablewrap"><table><thead><tr><th>Canal</th><th>Estado</th><th>Intentos</th><th>Último intento</th><th>Error</th></tr></thead><tbody>` +
+      (d.deliveries.map((x) => `<tr><td>${esc(x.channel)}</td><td><span class="badge ${x.status === 'SENT' ? 'b-SUCCESS' : 'b-FAILED'}">${esc(x.status)}</span></td>
+        <td>${esc(x.attempts)}</td><td>${esc(fmtDate(x.last_attempt_at))}</td><td>${esc(x.error_detail ?? '')}</td></tr>`).join('')) +
+      `</tbody></table></div><div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn" data-st="ATENDIDA">Marcar atendida</button><button class="btn" data-st="DESCARTADA">Descartar</button>
+        <button class="btn" data-st="RESUELTA">Marcar resuelta</button></div>`;
+    $('#alDetail').hidden = false;
+    $('#alDetail').querySelectorAll('button[data-st]').forEach((b) => b.addEventListener('click', async () => {
+      try { await apiSend('PATCH', `/api/alerts/${id}/status`, { status: b.dataset.st }); await loadAlerts(); await openAlert(id); }
+      catch (err) { showError(err.message); }
+    }));
+    $('#alDetail').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  } catch (err) { showError(err.message); }
+}
+$('#alStatus').addEventListener('change', loadAlerts);
+$('#alReload').addEventListener('click', loadAlerts);
+
+
+// ---------- asistente de IA ----------
+const SAMPLES = ['¿Cuáles fueron las ventas del último trimestre?', '¿Qué categorías tuvieron mayor crecimiento?',
+  'Resume los principales cambios respecto al período anterior', '¿Qué regiones presentan una disminución relevante?',
+  '¿Cómo se espera que sean las ventas del próximo mes?', '¿Hay alertas abiertas?'];
+let chatReady = false, chatBusy = false;
+
+async function initChat() {
+  if (chatReady) return;
+  chatReady = true;
+  $('#chatSamples').innerHTML = '';
+  SAMPLES.forEach((t) => {
+    const b = document.createElement('button'); b.className = 'btn'; b.type = 'button'; b.textContent = t;
+    b.addEventListener('click', () => ask(t)); $('#chatSamples').appendChild(b);
+  });
+  try {
+    const i = await api('/api/assistant/info');
+    $('#chatProvider').textContent = 'Motor: ' + i.provider + (i.external ? ' (servicio externo: solo recibe cifras agregadas)' : '') + '.';
+  } catch (err) { /* informativo */ }
+}
+function addMsg(cls, html) {
+  const d = document.createElement('div'); d.className = 'msg ' + cls; d.innerHTML = html;
+  const log = $('#chatLog'); if (log.querySelector('.muted')) log.innerHTML = '';
+  log.appendChild(d); log.scrollTop = log.scrollHeight; return d;
+}
+function renderAnswer(r) {
+  if (r.status !== 'ANSWERED') {
+    const label = { NO_DATA: 'Sin datos suficientes', OUT_OF_SCOPE: 'Fuera de alcance', ERROR: 'Error' }[r.status] || r.status;
+    return `<b>${esc(label)}.</b> ${esc(r.answer)}`;
+  }
+  const by = r.interpretation_by
+    ? `<span class="tag ai">INTERPRETACIÓN GENERADA POR IA · ${esc(r.interpretation_by)}</span>`
+    : '<span class="tag rules">RESPUESTA POR REGLAS (sin modelo de lenguaje)</span>';
+  let h = `<div>${by}</div><p style="margin:6px 0">${esc(r.answer)}</p>`;
+  h += `<div><span class="tag ${r.is_prediction ? 'pred' : 'fact'}">${r.is_prediction ? 'PREDICCIÓN' : 'HECHOS'} consultados del Data Warehouse</span></div><ul>` +
+       r.facts.map((f) => `<li>${esc(f)}</li>`).join('') + '</ul>';
+  (r.assumptions || []).forEach((a) => { h += `<div class="muted">ℹ ${esc(a)}</div>`; });
+  (r.warnings || []).forEach((w) => { h += `<div class="warn">⚠ ${esc(w)}</div>`; });
+  h += '<details><summary>Respaldo (herramientas y periodos)</summary>' + (r.sources || []).map((s) =>
+    `<div>${esc(s.title)} · ${esc(s.tool)} · ${esc(s.period ? s.period.label + ' (' + s.period.date_from + ' a ' + s.period.date_to + ')' : 'sin periodo')}` +
+    `${Object.keys(s.filters || {}).length ? ' · filtros: ' + esc(JSON.stringify(s.filters)) : ''}</div>`).join('') + '</details>';
+  h += `<div class="muted" style="margin-top:4px">Datos hasta ${esc((r.data_range || [])[1] || '—')} · última carga: ${esc(r.data_as_of ? fmtDate(r.data_as_of) : '—')}</div>`;
+  return h;
+}
+async function ask(question) {
+  question = (question || '').trim();
+  if (!question || chatBusy) return;
+  chatBusy = true; $('#chatSend').disabled = true;
+  addMsg('user', esc(question));
+  const waiting = addMsg('bot', '<span class="muted">Consultando los datos…</span>');
+  try {
+    const r = await apiSend('POST', '/api/assistant', { question });
+    waiting.innerHTML = renderAnswer(r);
+  } catch (err) {
+    waiting.innerHTML = `<b>Error.</b> ${esc(err.message)}`;
+  } finally { chatBusy = false; $('#chatSend').disabled = false; $('#chatLog').scrollTop = $('#chatLog').scrollHeight; }
+}
+$('#chatForm').addEventListener('submit', (e) => { e.preventDefault(); const t = $('#chatInput').value; $('#chatInput').value = ''; ask(t); });
+
+// ---------- inicio ----------
+if (token) start(); else $('#login').hidden = false;
+</script>
+</body>
+</html>

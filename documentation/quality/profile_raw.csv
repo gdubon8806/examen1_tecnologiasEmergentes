@@ -1,0 +1,70 @@
+﻿layer,table_name,column_name,data_type,total_rows,null_count,null_pct,distinct_values,min_value,max_value
+raw,cities,CityID,int64,37940,0,0.0,37940,1,38186
+raw,cities,CityName,str,37940,0,0.0,23279,'Aiea,Zwolle
+raw,cities,StateProvinceID,int64,37940,0,0.0,53,1,53
+raw,cities,LatestRecordedPopulation,float64,37940,11048,29.12,9324,0.0,8175133.0
+raw,countries,CountryID,int64,190,0,0.0,190,1,241
+raw,countries,CountryName,str,190,0,0.0,190,Afghanistan,Zimbabwe
+raw,countries,Continent,str,190,0,0.0,7,Africa,South America
+raw,countries,Region,str,190,0,0.0,5,Africa,Oceania
+raw,countries,Subregion,str,190,0,0.0,22,Australia and New Zealand,Western Europe
+raw,customer_categories,CustomerCategoryID,int64,8,0,0.0,8,1,8
+raw,customer_categories,CustomerCategoryName,str,8,0,0.0,8,Agent,Wholesaler
+raw,customers,CustomerID,int64,663,0,0.0,663,1,1061
+raw,customers,CustomerName,str,663,0,0.0,663,Aakriti Byrraju,Yves Belisle
+raw,customers,BillToCustomerID,int64,663,0,0.0,263,1,1061
+raw,customers,CustomerCategoryID,int64,663,0,0.0,5,3,7
+raw,customers,BuyingGroupID,float64,663,261,39.37,2,1.0,2.0
+raw,customers,DeliveryCityID,int64,663,0,0.0,655,15,38184
+raw,customers,CreditLimit,float64,663,402,60.63,56,1100.0,4630.5
+raw,customers,AccountOpenedDate,object,663,0,0.0,62,2013-01-01,2016-05-07
+raw,customers,StandardDiscountPercentage,float64,663,0,0.0,1,0.0,0.0
+raw,customers,IsOnCreditHold,bool,663,0,0.0,1,False,False
+raw,customers,PaymentDays,int64,663,0,0.0,1,7,7
+raw,customers,DeliveryPostalCode,str,663,0,0.0,453,90002,90800
+raw,order_lines,OrderLineID,int64,231412,0,0.0,231412,1,231412
+raw,order_lines,OrderID,int64,231412,0,0.0,73595,1,73595
+raw,order_lines,StockItemID,int64,231412,0,0.0,227,1,227
+raw,order_lines,Description,str,231412,0,0.0,227,"""The Gu"" red shirt XML tag t-shirt (Black) 3XL",White chocolate snow balls 250g
+raw,order_lines,PackageTypeID,int64,231412,0,0.0,4,1,10
+raw,order_lines,Quantity,int64,231412,0,0.0,61,1,360
+raw,order_lines,UnitPrice,float64,231412,0,0.0,62,0.66,1899.0
+raw,order_lines,TaxRate,float64,231412,0,0.0,2,10.0,15.0
+raw,order_lines,PickedQuantity,int64,231412,0,0.0,62,0,360
+raw,order_lines,PickingCompletedWhen,datetime64[us],231412,3147,1.36,1069,2013-01-01 11:00:00,2016-05-31 11:00:00
+raw,order_lines,LastEditedBy,int64,231412,0,0.0,20,1,20
+raw,order_lines,LastEditedWhen,datetime64[us],231412,0,0.0,1970,2013-01-01 11:00:00,2016-05-31 12:00:00
+raw,orders,OrderID,int64,73595,0,0.0,73595,1,73595
+raw,orders,CustomerID,int64,73595,0,0.0,663,1,1061
+raw,orders,SalespersonPersonID,int64,73595,0,0.0,10,2,20
+raw,orders,PickedByPersonID,float64,73595,10623,14.43,19,2.0,20.0
+raw,orders,ContactPersonID,int64,73595,0,0.0,663,1001,3261
+raw,orders,BackorderOrderID,float64,73595,66057,89.76,7538,45.0,73595.0
+raw,orders,OrderDate,object,73595,0,0.0,1069,2013-01-01,2016-05-31
+raw,orders,ExpectedDeliveryDate,object,73595,0,0.0,891,2013-01-02,2016-06-01
+raw,orders,CustomerPurchaseOrderNumber,str,73595,0,0.0,9984,10001,20000
+raw,orders,IsUndersupplyBackordered,bool,73595,0,0.0,1,True,True
+raw,orders,PickingCompletedWhen,datetime64[us],73595,3085,4.19,2124,2013-01-01 11:00:00,2016-05-31 12:00:00
+raw,orders,LastEditedBy,int64,73595,0,0.0,20,1,20
+raw,orders,LastEditedWhen,datetime64[us],73595,0,0.0,2129,2013-01-01 11:00:00,2016-05-31 12:00:00
+raw,state_provinces,StateProvinceID,int64,53,0,0.0,53,1,53
+raw,state_provinces,StateProvinceCode,str,53,0,0.0,53,AK,WY
+raw,state_provinces,StateProvinceName,str,53,0,0.0,53,Alabama,Wyoming
+raw,state_provinces,CountryID,int64,53,0,0.0,1,230,230
+raw,state_provinces,SalesTerritory,str,53,0,0.0,9,External,Southwest
+raw,stock_groups,StockGroupID,int64,10,0,0.0,10,1,10
+raw,stock_groups,StockGroupName,str,10,0,0.0,10,Airline Novelties,USB Novelties
+raw,stock_item_stock_groups,StockItemStockGroupID,int64,442,0,0.0,442,1,442
+raw,stock_item_stock_groups,StockItemID,int64,442,0,0.0,227,1,227
+raw,stock_item_stock_groups,StockGroupID,int64,442,0,0.0,9,1,10
+raw,stock_items,StockItemID,int64,227,0,0.0,227,1,227
+raw,stock_items,StockItemName,str,227,0,0.0,227,"""The Gu"" red shirt XML tag t-shirt (Black) 3XL",White chocolate snow balls 250g
+raw,stock_items,SupplierID,int64,227,0,0.0,7,1,12
+raw,stock_items,ColorID,float64,227,99,43.61,7,3.0,36.0
+raw,stock_items,Brand,str,227,209,92.07,1,Northwind,Northwind
+raw,stock_items,Size,str,227,64,28.19,43,1.5m,XXS
+raw,stock_items,UnitPackageID,int64,227,0,0.0,4,1,10
+raw,stock_items,TaxRate,float64,227,0,0.0,2,10.0,15.0
+raw,stock_items,UnitPrice,float64,227,0,0.0,57,0.66,1899.0
+raw,stock_items,RecommendedRetailPrice,float64,227,0,0.0,57,0.99,2839.01
+raw,stock_items,TypicalWeightPerUnit,float64,227,0,0.0,23,0.05,21.0
